@@ -24,7 +24,7 @@ public class CredentailStorage
 
 	public static void save( final String userName, final String password, final Context context )
 	{
-		NoSQLEntity<Credentials> entity = new NoSQLEntity<Credentials>( BUCKET, ID );
+		NoSQLEntity<Credentials> entity = new NoSQLEntity<>( BUCKET, ID );
 		Credentials data = new Credentials( userName, password );
 		entity.setData( data );
 

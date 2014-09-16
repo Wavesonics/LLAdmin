@@ -11,6 +11,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.AutoCompleteTextView;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -54,6 +55,9 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 
 	@InjectView(R.id.login_form)
 	View mLoginFormView;
+
+	@InjectView( R.id.LOGIN_remember_credentials )
+	CheckBox m_rememberCredentialsView;
 
 	@Override
 	protected void onCreate( final Bundle savedInstanceState )
@@ -124,7 +128,7 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 
 			authObservable.subscribeOn( Schedulers.newThread() )
 			              .observeOn( AndroidSchedulers.mainThread() )
-			              .subscribe( new LoginObserver( email, password ) );
+			              .subscribe( new LoginObserver( email, password, m_rememberCredentialsView.isChecked() ) );
 		}
 	}
 
@@ -188,6 +192,8 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 			if( entry != null )
 			{
 				m_savedCredentails = entry.getData();
+				m_rememberCredentialsView.setChecked( true );
+
 				updateViews();
 			}
 		}
@@ -224,12 +230,14 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 	{
 		private final String m_user;
 		private final String m_password;
+		private final boolean m_saveCredentials;
 
-		public LoginObserver( final String user, final String password )
+		public LoginObserver( final String user, final String password, final boolean saveCredentials )
 		{
 
 			m_user = user;
 			m_password = password;
+			m_saveCredentials = saveCredentials;
 		}
 
 		@Override
@@ -255,21 +263,20 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 			if( success )
 			{
 				Log.d( TAG, "authToken " + authResponse.token );
-				CredentailStorage.save( m_user, m_password, LoginActivity.this );
+				if( m_saveCredentials )
+				{
+					CredentailStorage.save( m_user, m_password, LoginActivity.this );
+				}
 
-				TemporaryAuthToken.authToken =
-						authResponse.token;
+				TemporaryAuthToken.authToken = authResponse.token;
 
-				Intent intent =
-						new Intent( LoginActivity.this,
-						            LaunchListActivity.class );
+				Intent intent = new Intent( LoginActivity.this, LaunchListActivity.class );
 				startActivity( intent );
 				finish();
 			}
 			else
 			{
-				mPasswordView
-						.setError( getString( R.string.error_incorrect_password ) );
+				mPasswordView.setError( getString( R.string.error_incorrect_password ) );
 				mPasswordView.requestFocus();
 			}
 		}

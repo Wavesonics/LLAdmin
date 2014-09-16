@@ -16,13 +16,54 @@ android {
         minSdkVersion 15
         targetSdkVersion 20
         versionCode 1
-        versionName "1.0"
+        versionName "0.1"
     }
+
+    signingConfigs {
+        release {
+
+        }
+        debug {
+
+        }
+    }
+
     buildTypes {
         release {
+            debuggable false
+            zipAlign true
             runProguard false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+        debug {
+            debuggable true
+            zipAlign true
+            runProguard false
+        }
+    }
+
+    // Read our private signing details from the local properties file
+    if (project.hasProperty('storeFile') &&
+            project.hasProperty('storePassword') &&
+            project.hasProperty('keyAlias') &&
+            project.hasProperty('keyPassword')) {
+        println 'gradle.properties OK'
+        android.signingConfigs.release.storeFile = file(storeFile)
+        android.signingConfigs.release.storePassword = storePassword
+        android.signingConfigs.release.keyAlias = keyAlias
+        android.signingConfigs.release.keyPassword = keyPassword
+
+        buildTypes.release.signingConfig = android.signingConfigs.release
+        // Because we require the Google Play games API to be working even in Debug, we must always sign
+        // with out release cert
+        buildTypes.debug.signingConfig = android.signingConfigs.release
+    } else {
+        println 'gradle.properties not well formed'
+        if (!project.hasProperty('storeFile')) println 'storeFile not defined'
+        if (!project.hasProperty('storePassword')) println 'storePassword not defined'
+        if (!project.hasProperty('keyAlias')) println 'keyAlias not defined'
+        if (!project.hasProperty('keyPassword')) println 'keyPassword not defined'
+
+        buildTypes.release.signingConfig = null
     }
 }
 
