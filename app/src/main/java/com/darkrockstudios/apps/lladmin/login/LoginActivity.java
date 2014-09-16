@@ -4,7 +4,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -20,8 +19,8 @@ import com.colintmiller.simplenosql.RetrievalCallback;
 import com.darkrockstudios.apps.lladmin.R;
 import com.darkrockstudios.apps.lladmin.TemporaryAuthToken;
 import com.darkrockstudios.apps.lladmin.api.LLApiProvider;
-import com.darkrockstudios.apps.lladmin.api.data.AuthResponse;
 import com.darkrockstudios.apps.lladmin.api.data.AuthRequest;
+import com.darkrockstudios.apps.lladmin.api.data.AuthResponse;
 import com.darkrockstudios.apps.lladmin.launches.LaunchListActivity;
 
 import java.util.List;
@@ -29,6 +28,10 @@ import java.util.List;
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import butterknife.OnClick;
+import rx.Observable;
+import rx.Observer;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 
 /**
@@ -37,11 +40,6 @@ import butterknife.OnClick;
 public class LoginActivity extends Activity implements RetrievalCallback<Credentials>
 {
 	private static final String TAG = LoginActivity.class.getSimpleName();
-
-	/**
-	 * Keep track of the login task to ensure we can cancel it if requested.
-	 */
-	private UserLoginTask mAuthTask = null;
 
 	private Credentials m_savedCredentails;
 
@@ -76,11 +74,6 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 	 */
 	public void attemptLogin()
 	{
-		if( mAuthTask != null )
-		{
-			return;
-		}
-
 		// Reset errors.
 		m_userView.setError( null );
 		mPasswordView.setError( null );
@@ -125,8 +118,13 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 			// Show a progress spinner, and kick off a background task to
 			// perform the user login attempt.
 			showProgress( true );
-			mAuthTask = new UserLoginTask( email, password );
-			mAuthTask.execute( (Void) null );
+
+			final AuthRequest authRequest = new AuthRequest( email, password );
+			final Observable<AuthResponse> authObservable = LLApiProvider.get().auth( authRequest );
+
+			authObservable.subscribeOn( Schedulers.newThread() )
+			              .observeOn( AndroidSchedulers.mainThread() )
+			              .subscribe( new LoginObserver( email, password ) );
 		}
 	}
 
@@ -176,8 +174,8 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 	{
 		if( m_savedCredentails != null )
 		{
-			m_userView.setText( m_savedCredentails.userName );
-			mPasswordView.setText( m_savedCredentails.password );
+			m_userView.setText( m_savedCredentails.userName() );
+			mPasswordView.setText( m_savedCredentails.password() );
 		}
 	}
 
@@ -192,65 +190,6 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 				m_savedCredentails = entry.getData();
 				updateViews();
 			}
-		}
-	}
-
-	/**
-	 * Represents an asynchronous login/registration task used to authenticate
-	 * the user.
-	 */
-	public class UserLoginTask extends AsyncTask<Void, Void, Boolean>
-	{
-		private final String m_user;
-		private final String m_password;
-
-		UserLoginTask( final String email, final String password )
-		{
-			m_user = email;
-			m_password = password;
-		}
-
-		@Override
-		protected Boolean doInBackground( final Void... params )
-		{
-			final AuthResponse authToken = LLApiProvider.get().auth( new AuthRequest( m_user, m_password ) );
-			final boolean success = authToken != null && !TextUtils.isEmpty( authToken.token );
-
-			if( success )
-			{
-				CredentailStorage.save( m_user, m_password, LoginActivity.this );
-
-				TemporaryAuthToken.authToken = authToken.token;
-				Log.d( TAG, "authToken " + authToken );
-			}
-
-			return success;
-		}
-
-		@Override
-		protected void onPostExecute( final Boolean success )
-		{
-			mAuthTask = null;
-			showProgress( false );
-
-			if( success )
-			{
-				Intent intent = new Intent( LoginActivity.this, LaunchListActivity.class );
-				startActivity( intent );
-				finish();
-			}
-			else
-			{
-				mPasswordView.setError( getString( R.string.error_incorrect_password ) );
-				mPasswordView.requestFocus();
-			}
-		}
-
-		@Override
-		protected void onCancelled()
-		{
-			mAuthTask = null;
-			showProgress( false );
 		}
 	}
 
@@ -278,6 +217,61 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 			}
 
 			return success;
+		}
+	}
+
+	private class LoginObserver implements Observer<AuthResponse>
+	{
+		private final String m_user;
+		private final String m_password;
+
+		public LoginObserver( final String user, final String password )
+		{
+
+			m_user = user;
+			m_password = password;
+		}
+
+		@Override
+		public void onCompleted()
+		{
+			showProgress( false );
+		}
+
+		@Override
+		public void onError( final Throwable e )
+		{
+			showProgress( false );
+		}
+
+		@Override
+		public void onNext( final AuthResponse authResponse )
+		{
+			final boolean success = authResponse != null
+			                        && authResponse.token != null
+			                        && !TextUtils.isEmpty( authResponse.token );
+			showProgress( false );
+
+			if( success )
+			{
+				Log.d( TAG, "authToken " + authResponse.token );
+				CredentailStorage.save( m_user, m_password, LoginActivity.this );
+
+				TemporaryAuthToken.authToken =
+						authResponse.token;
+
+				Intent intent =
+						new Intent( LoginActivity.this,
+						            LaunchListActivity.class );
+				startActivity( intent );
+				finish();
+			}
+			else
+			{
+				mPasswordView
+						.setError( getString( R.string.error_incorrect_password ) );
+				mPasswordView.requestFocus();
+			}
 		}
 	}
 }

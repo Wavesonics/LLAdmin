@@ -1,7 +1,6 @@
 package com.darkrockstudios.apps.lladmin.launches;
 
 import android.app.Fragment;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +15,10 @@ import com.darkrockstudios.apps.lladmin.api.data.LaunchGetResponse;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
+import rx.Observable;
+import rx.Observer;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 public class LaunchDetailFragment extends Fragment
 {
@@ -63,8 +66,12 @@ public class LaunchDetailFragment extends Fragment
 	{
 		super.onResume();
 
-		final LoadLaunchListTask loadLaunchListTask = new LoadLaunchListTask();
-		loadLaunchListTask.execute( new LaunchGetRequest( LaunchGetRequest.MODE_VERBOSE, m_launchId ) );
+		final LaunchGetRequest request = new LaunchGetRequest( LaunchGetRequest.MODE_VERBOSE, m_launchId );
+		final Observable<LaunchGetResponse> observable = LLApiProvider.get().launchGet( request );
+
+		observable.subscribeOn( Schedulers.newThread() )
+		          .observeOn( AndroidSchedulers.mainThread() )
+		          .subscribe( new LaunchObserver() );
 	}
 
 	private void updateViews()
@@ -80,16 +87,22 @@ public class LaunchDetailFragment extends Fragment
 		}
 	}
 
-	private class LoadLaunchListTask extends AsyncTask<LaunchGetRequest, Void, LaunchGetResponse>
+	private class LaunchObserver implements Observer<LaunchGetResponse>
 	{
 		@Override
-		protected LaunchGetResponse doInBackground( final LaunchGetRequest... launchGetRequests )
+		public void onCompleted()
 		{
-			return LLApiProvider.get().launchGet( launchGetRequests[ 0 ] );
+
 		}
 
 		@Override
-		protected void onPostExecute( final LaunchGetResponse launchGetResponse )
+		public void onError( final Throwable e )
+		{
+			updateViews();
+		}
+
+		@Override
+		public void onNext( final LaunchGetResponse launchGetResponse )
 		{
 			if( launchGetResponse != null
 			    && launchGetResponse.launches != null

@@ -2,7 +2,6 @@ package com.darkrockstudios.apps.lladmin.launches;
 
 import android.app.Activity;
 import android.app.ListFragment;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -14,6 +13,11 @@ import com.darkrockstudios.apps.lladmin.api.data.LaunchGetRequest;
 import com.darkrockstudios.apps.lladmin.api.data.LaunchGetResponse;
 
 import java.util.ArrayList;
+
+import rx.Observable;
+import rx.Observer;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 /**
  * A list fragment representing a list of Launches. This fragment
@@ -70,11 +74,10 @@ public class LaunchListFragment extends ListFragment
 	{
 		super.onCreate( savedInstanceState );
 
-		m_adapter = new ArrayAdapter<Launch>(
-				                                    getActivity(),
-				                                    android.R.layout.simple_list_item_activated_1,
-				                                    android.R.id.text1,
-				                                    new ArrayList<Launch>() );
+		m_adapter = new ArrayAdapter<>( getActivity(),
+		                                android.R.layout.simple_list_item_activated_1,
+		                                android.R.id.text1,
+		                                new ArrayList<Launch>() );
 		setListAdapter( m_adapter );
 	}
 
@@ -96,10 +99,12 @@ public class LaunchListFragment extends ListFragment
 	{
 		super.onResume();
 
-		final LoadLaunchListTask loadLaunchListTask = new LoadLaunchListTask();
-
 		final LaunchGetRequest request = new LaunchGetRequest( "overview", 10, 0 );
-		loadLaunchListTask.execute( request );
+		final Observable<LaunchGetResponse> observable = LLApiProvider.get().launchGet( request );
+
+		observable.subscribeOn( Schedulers.newThread() )
+		          .observeOn( AndroidSchedulers.mainThread() )
+		          .subscribe( new LaunchObserver() );
 	}
 
 	@Override
@@ -172,16 +177,22 @@ public class LaunchListFragment extends ListFragment
 		m_activatedPosition = position;
 	}
 
-	private class LoadLaunchListTask extends AsyncTask<LaunchGetRequest, Void, LaunchGetResponse>
+	private class LaunchObserver implements Observer<LaunchGetResponse>
 	{
 		@Override
-		protected LaunchGetResponse doInBackground( final LaunchGetRequest... launchGetRequests )
+		public void onCompleted()
 		{
-			return LLApiProvider.get().launchGet( launchGetRequests[ 0 ] );
+
 		}
 
 		@Override
-		protected void onPostExecute( final LaunchGetResponse launchGetResponse )
+		public void onError( final Throwable e )
+		{
+
+		}
+
+		@Override
+		public void onNext( final LaunchGetResponse launchGetResponse )
 		{
 			m_adapter.clear();
 			m_adapter.addAll( launchGetResponse.launches );
