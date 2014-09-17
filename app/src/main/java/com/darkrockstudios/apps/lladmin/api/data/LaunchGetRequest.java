@@ -6,11 +6,11 @@ package com.darkrockstudios.apps.lladmin.api.data;
 public class LaunchGetRequest extends LLAdminRequest
 {
 	public static transient final String MODE_OVERVIEW = "overview";
-	public static transient final String MODE_SUMMARY = "summary";
-	public static transient final String MODE_VERBOSE = "verbose";
+	public static transient final String MODE_SUMMARY  = "summary";
+	public static transient final String MODE_VERBOSE  = "verbose";
 
-	public final String mode;
-	public final int limit;
+	public final String  mode;
+	public final int     limit;
 	public final Integer id;
 
 	/**

@@ -23,7 +23,7 @@ public final class LLApiProvider
 		{
 			RestAdapter restAdapter = new RestAdapter.Builder()
 					                          .setEndpoint( "http://launchlibrary.net/lladmin/dev" )
-											  .setConverter( new GsonConverter( LaunchLibraryGson.create() ) )
+					                          .setConverter( new GsonConverter( LaunchLibraryGson.create() ) )
 					                          .build();
 			m_llApi = restAdapter.create( LLApi.class );
 		}

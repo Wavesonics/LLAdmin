@@ -56,7 +56,7 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 	@InjectView(R.id.login_form)
 	View mLoginFormView;
 
-	@InjectView( R.id.LOGIN_remember_credentials )
+	@InjectView(R.id.LOGIN_remember_credentials)
 	CheckBox m_rememberCredentialsView;
 
 	@Override
@@ -228,8 +228,8 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 
 	private class LoginObserver implements Observer<AuthResponse>
 	{
-		private final String m_user;
-		private final String m_password;
+		private final String  m_user;
+		private final String  m_password;
 		private final boolean m_saveCredentials;
 
 		public LoginObserver( final String user, final String password, final boolean saveCredentials )
