@@ -5,20 +5,29 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.TableLayout;
 
+import com.android.datetimepicker.date.DatePickerDialog;
+import com.android.datetimepicker.time.RadialPickerLayout;
+import com.android.datetimepicker.time.TimePickerDialog;
 import com.darkrockstudios.apps.lladmin.R;
 import com.darkrockstudios.apps.lladmin.api.LLApiProvider;
 import com.darkrockstudios.apps.lladmin.api.data.LaunchGetRequest;
 import com.darkrockstudios.apps.lladmin.api.data.LaunchGetResponse;
 import com.darkrockstudios.apps.lladmin.api.data.launchlibrary.Launch;
+import com.darkrockstudios.apps.lladmin.launches.viewholders.EditDateTimeViewHolder;
+import com.darkrockstudios.apps.lladmin.launches.viewholders.EditTextViewHolder;
+
+import org.joda.time.DateTime;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
 import rx.Observable;
 import rx.Observer;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
 
 public class LaunchDetailFragment extends Fragment
 {
@@ -28,8 +37,8 @@ public class LaunchDetailFragment extends Fragment
 
 	private Launch m_item;
 
-	@InjectView(R.id.launch_detail)
-	TextView m_launchDetailView;
+	@InjectView(R.id.LAUNCH_DETAIL_edit_container)
+	TableLayout m_launchDetailView;
 
 	public LaunchDetailFragment()
 	{
@@ -69,21 +78,110 @@ public class LaunchDetailFragment extends Fragment
 		final LaunchGetRequest request = new LaunchGetRequest( LaunchGetRequest.MODE_VERBOSE, m_launchId );
 		final Observable<LaunchGetResponse> observable = LLApiProvider.get().launchGet( request );
 
+		/*
+		Hack to get around the broken API
 		observable.subscribeOn( Schedulers.newThread() )
 		          .observeOn( AndroidSchedulers.mainThread() )
 		          .subscribe( new LaunchObserver() );
+		          */
+
+		// Hacky hardcoded bull
+		m_item = new Launch();
+		m_item.id = 12;
+		m_item.inhold = false;
+		m_item.name = "Test Launch";
+		m_item.net = DateTime.now();
+		m_item.status = 1;
+		m_item.windowstart = DateTime.now();
+		m_item.windowend = DateTime.now();
+		//m_item.location
+
+		updateViews();
 	}
 
 	private void updateViews()
 	{
+		m_launchDetailView.removeAllViews();
+
 		// Show the dummy content as text in a TextView.
 		if( m_item != null )
 		{
-			m_launchDetailView.setText( m_item.toString() );
+			final LayoutInflater inflater = LayoutInflater.from( getActivity() );
+			//m_launchDetailView.setText( m_item.toString() );
+
+			final Field[] fields = Launch.class.getDeclaredFields();
+			for( final Field field : fields )
+			{
+				final String name = field.getName();
+				final Type type = field.getType();
+
+				try
+				{
+					final int fieldModifiers = field.getModifiers();
+					if( !Modifier.isTransient( fieldModifiers ) && !Modifier.isStatic( fieldModifiers ) )
+					{
+						if( type.equals( String.class ) )
+						{
+							final View view = inflater.inflate( R.layout.edit_row_text, m_launchDetailView, false );
+							EditTextViewHolder holder = new EditTextViewHolder( view );
+							view.setTag( holder );
+
+							holder.m_label.setText( name );
+							holder.m_field.setText( field.get( m_item ).toString() );
+
+							m_launchDetailView.addView( view );
+						}
+						else if( type.equals( DateTime.class ) )
+						{
+							final View view = inflater.inflate( R.layout.edit_row_datetime, m_launchDetailView, false );
+							EditDateTimeViewHolder holder = new EditDateTimeViewHolder( view );
+							view.setTag( holder );
+
+							holder.m_label.setText( name );
+							holder.m_field.setText( field.get( m_item ).toString() );
+							holder.m_field.setOnClickListener( new DateClickListener() );
+
+							m_launchDetailView.addView( view );
+						}
+					}
+				}
+				catch( final IllegalAccessException e )
+				{
+					e.printStackTrace();
+				}
+			}
+
+			//m_launchDetailView.setText( test );
 		}
 		else
 		{
-			m_launchDetailView.setText( R.string.LAUNCHDETAIL_error );
+			//m_launchDetailView.setText( R.string.LAUNCHDETAIL_error );
+		}
+	}
+
+	private class DateClickListener implements View.OnClickListener
+	{
+		@Override
+		public void onClick( final View view )
+		{
+			DatePickerDialog dialog = DatePickerDialog.newInstance( new DateTimeListener(), 0, 0, 0 );
+			dialog.show( getFragmentManager(), "date_picker" );
+		}
+	}
+
+	private class DateTimeListener implements DatePickerDialog.OnDateSetListener, TimePickerDialog.OnTimeSetListener
+	{
+		@Override
+		public void onDateSet( final DatePickerDialog datePickerDialog, final int year, final int month, final int day )
+		{
+			TimePickerDialog dialog = TimePickerDialog.newInstance( new DateTimeListener(), 0, 0, true );
+			dialog.show( getFragmentManager(), "date_picker" );
+		}
+
+		@Override
+		public void onTimeSet( final RadialPickerLayout radialPickerLayout, final int hours, final int minutes )
+		{
+
 		}
 	}
 
@@ -115,3 +213,4 @@ public class LaunchDetailFragment extends Fragment
 		}
 	}
 }
+

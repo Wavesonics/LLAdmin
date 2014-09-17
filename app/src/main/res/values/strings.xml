@@ -9,5 +9,6 @@
     <string name="title_launch_detail">Launch Detail</string>
     <string name="LAUNCHDETAIL_error">Error loading Launch details</string>
     <string name="LOGIN_remember_credentials_checkbox">Remember credentials</string>
+    <string name="EDIT_ROW_datetime_set_button">Set</string>
 
 </resources>
