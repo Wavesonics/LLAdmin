@@ -1,5 +1,7 @@
 package com.darkrockstudios.apps.lladmin.api.data;
 
+import com.darkrockstudios.apps.lladmin.api.data.launchlibrary.Launch;
+
 import java.util.List;
 
 /**

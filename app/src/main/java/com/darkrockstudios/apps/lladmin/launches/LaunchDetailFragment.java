@@ -9,9 +9,9 @@ import android.widget.TextView;
 
 import com.darkrockstudios.apps.lladmin.R;
 import com.darkrockstudios.apps.lladmin.api.LLApiProvider;
-import com.darkrockstudios.apps.lladmin.api.data.Launch;
 import com.darkrockstudios.apps.lladmin.api.data.LaunchGetRequest;
 import com.darkrockstudios.apps.lladmin.api.data.LaunchGetResponse;
+import com.darkrockstudios.apps.lladmin.api.data.launchlibrary.Launch;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
@@ -28,7 +28,7 @@ public class LaunchDetailFragment extends Fragment
 
 	private Launch m_item;
 
-	@InjectView( R.id.launch_detail )
+	@InjectView(R.id.launch_detail)
 	TextView m_launchDetailView;
 
 	public LaunchDetailFragment()

@@ -8,9 +8,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import com.darkrockstudios.apps.lladmin.api.LLApiProvider;
-import com.darkrockstudios.apps.lladmin.api.data.Launch;
 import com.darkrockstudios.apps.lladmin.api.data.LaunchGetRequest;
 import com.darkrockstudios.apps.lladmin.api.data.LaunchGetResponse;
+import com.darkrockstudios.apps.lladmin.api.data.launchlibrary.Launch;
 
 import java.util.ArrayList;
 
