@@ -3,9 +3,13 @@ package com.darkrockstudios.apps.lladmin.launches;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TableLayout;
+import android.widget.Toast;
 
 import com.android.datetimepicker.date.DatePickerDialog;
 import com.android.datetimepicker.time.RadialPickerLayout;
@@ -17,12 +21,15 @@ import com.darkrockstudios.apps.lladmin.api.data.LaunchGetResponse;
 import com.darkrockstudios.apps.lladmin.api.data.launchlibrary.Launch;
 import com.darkrockstudios.apps.lladmin.launches.viewholders.EditDateTimeViewHolder;
 import com.darkrockstudios.apps.lladmin.launches.viewholders.EditTextViewHolder;
+import com.darkrockstudios.apps.lladmin.launches.viewholders.FieldViewHolder;
 
 import org.joda.time.DateTime;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.ButterKnife;
 import butterknife.InjectView;
@@ -33,15 +40,19 @@ public class LaunchDetailFragment extends Fragment
 {
 	public static final String ARG_ITEM_ID = "item_id";
 
-	private int m_launchId;
+	private int      m_launchId;
+	private MenuItem m_saveActionItem;
 
 	private Launch m_item;
+
+	private final List<FieldViewHolder> m_viewHolders;
 
 	@InjectView(R.id.LAUNCH_DETAIL_edit_container)
 	TableLayout m_launchDetailView;
 
 	public LaunchDetailFragment()
 	{
+		m_viewHolders = new ArrayList<>();
 	}
 
 	@Override
@@ -68,6 +79,36 @@ public class LaunchDetailFragment extends Fragment
 		updateViews();
 
 		return rootView;
+	}
+
+	@Override
+	public void onCreateOptionsMenu( final Menu menu, final MenuInflater inflater )
+	{
+		super.onCreateOptionsMenu( menu, inflater );
+
+		inflater.inflate( R.menu.edit, menu );
+
+		m_saveActionItem = menu.findItem( R.id.MENU_edit_save );
+		//m_saveActionItem.setEnabled( false );
+	}
+
+	@Override
+	public boolean onOptionsItemSelected( final MenuItem item )
+	{
+		final boolean handled;
+
+		switch( item.getItemId() )
+		{
+			case R.id.MENU_edit_save:
+				Toast.makeText( getActivity(), R.string.EDIT_saving_toast, Toast.LENGTH_SHORT );
+				handled = true;
+				break;
+			default:
+				handled = super.onOptionsItemSelected( item );
+				break;
+		}
+
+		return handled;
 	}
 
 	@Override
@@ -101,13 +142,13 @@ public class LaunchDetailFragment extends Fragment
 
 	private void updateViews()
 	{
+		m_viewHolders.clear();
 		m_launchDetailView.removeAllViews();
 
 		// Show the dummy content as text in a TextView.
 		if( m_item != null )
 		{
 			final LayoutInflater inflater = LayoutInflater.from( getActivity() );
-			//m_launchDetailView.setText( m_item.toString() );
 
 			final Field[] fields = Launch.class.getDeclaredFields();
 			for( final Field field : fields )
@@ -123,24 +164,26 @@ public class LaunchDetailFragment extends Fragment
 						if( type.equals( String.class ) )
 						{
 							final View view = inflater.inflate( R.layout.edit_row_text, m_launchDetailView, false );
-							EditTextViewHolder holder = new EditTextViewHolder( view );
+							EditTextViewHolder holder = new EditTextViewHolder( view, field, m_item );
 							view.setTag( holder );
 
-							holder.m_label.setText( name );
-							holder.m_field.setText( field.get( m_item ).toString() );
+							holder.m_labelView.setText( name );
+							holder.m_fieldView.setText( field.get( m_item ).toString() );
 
+							m_viewHolders.add( holder );
 							m_launchDetailView.addView( view );
 						}
 						else if( type.equals( DateTime.class ) )
 						{
 							final View view = inflater.inflate( R.layout.edit_row_datetime, m_launchDetailView, false );
-							EditDateTimeViewHolder holder = new EditDateTimeViewHolder( view );
+							EditDateTimeViewHolder holder = new EditDateTimeViewHolder( view, field, m_item );
 							view.setTag( holder );
 
-							holder.m_label.setText( name );
-							holder.m_field.setText( field.get( m_item ).toString() );
-							holder.m_field.setOnClickListener( new DateClickListener() );
+							holder.m_labelView.setText( name );
+							holder.m_fieldView.setText( field.get( m_item ).toString() );
+							holder.m_fieldView.setOnClickListener( new DateClickListener() );
 
+							m_viewHolders.add( holder );
 							m_launchDetailView.addView( view );
 						}
 					}
@@ -150,8 +193,6 @@ public class LaunchDetailFragment extends Fragment
 					e.printStackTrace();
 				}
 			}
-
-			//m_launchDetailView.setText( test );
 		}
 		else
 		{
