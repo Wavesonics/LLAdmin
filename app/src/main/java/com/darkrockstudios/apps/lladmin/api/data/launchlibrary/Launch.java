@@ -20,7 +20,7 @@ public class Launch implements Serializable
 	public DateTime            windowstart;
 	public DateTime            windowend;
 	public String              name;
-	public boolean             inhold;
+	public int                 inhold;
 	public DateTime            net;
 	public Collection<Mission> missions;
 	public Rocket              rocket;

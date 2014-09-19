@@ -1,18 +1,20 @@
 package com.darkrockstudios.apps.lladmin.launches;
 
 import android.app.Activity;
-import android.app.ListFragment;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-import com.darkrockstudios.apps.lladmin.api.LLApiProvider;
+import com.darkrockstudios.apps.lladmin.api.LLApi;
 import com.darkrockstudios.apps.lladmin.api.data.LaunchGetRequest;
 import com.darkrockstudios.apps.lladmin.api.data.LaunchGetResponse;
 import com.darkrockstudios.apps.lladmin.api.data.launchlibrary.Launch;
+import com.darkrockstudios.apps.lladmin.base.InjectedListFragment;
 
 import java.util.ArrayList;
+
+import javax.inject.Inject;
 
 import rx.Observable;
 import rx.Observer;
@@ -28,13 +30,16 @@ import rx.schedulers.Schedulers;
  * Activities containing this fragment MUST implement the {@link LaunchSelectedCallback}
  * interface.
  */
-public class LaunchListFragment extends ListFragment
+public class LaunchListFragment extends InjectedListFragment
 {
 	/**
 	 * The serialization (saved instance state) Bundle key representing the
 	 * activated item position. Only used on tablets.
 	 */
 	private static final String STATE_ACTIVATED_POSITION = "activated_position";
+
+	@Inject
+	LLApi m_llApi;
 
 	/**
 	 * The fragment's current callback object, which is notified of list item
@@ -100,7 +105,7 @@ public class LaunchListFragment extends ListFragment
 		super.onResume();
 
 		final LaunchGetRequest request = new LaunchGetRequest( "overview", 10, 0 );
-		final Observable<LaunchGetResponse> observable = LLApiProvider.get().launchGet( request );
+		final Observable<LaunchGetResponse> observable = m_llApi.launchGet( request );
 
 		observable.subscribeOn( Schedulers.newThread() )
 		          .observeOn( AndroidSchedulers.mainThread() )

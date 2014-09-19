@@ -2,7 +2,6 @@ package com.darkrockstudios.apps.lladmin.login;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -19,14 +18,16 @@ import com.colintmiller.simplenosql.NoSQLEntity;
 import com.colintmiller.simplenosql.RetrievalCallback;
 import com.darkrockstudios.apps.lladmin.R;
 import com.darkrockstudios.apps.lladmin.TemporaryAuthToken;
-import com.darkrockstudios.apps.lladmin.api.LLApiProvider;
+import com.darkrockstudios.apps.lladmin.api.LLApi;
 import com.darkrockstudios.apps.lladmin.api.data.AuthRequest;
 import com.darkrockstudios.apps.lladmin.api.data.AuthResponse;
+import com.darkrockstudios.apps.lladmin.base.InjectedActivity;
 import com.darkrockstudios.apps.lladmin.launches.LaunchListActivity;
 
 import java.util.List;
 
-import butterknife.ButterKnife;
+import javax.inject.Inject;
+
 import butterknife.InjectView;
 import butterknife.OnClick;
 import rx.Observable;
@@ -38,11 +39,14 @@ import rx.schedulers.Schedulers;
 /**
  * A login screen that offers login via email/password.
  */
-public class LoginActivity extends Activity implements RetrievalCallback<Credentials>
+public class LoginActivity extends InjectedActivity implements RetrievalCallback<Credentials>
 {
 	private static final String TAG = LoginActivity.class.getSimpleName();
 
 	private Credentials m_savedCredentails;
+
+	@Inject
+	LLApi m_llApi;
 
 	@InjectView(R.id.user)
 	AutoCompleteTextView m_userView;
@@ -63,12 +67,16 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 	protected void onCreate( final Bundle savedInstanceState )
 	{
 		super.onCreate( savedInstanceState );
-		setContentView( R.layout.activity_login );
-		ButterKnife.inject( this );
 
 		mPasswordView.setOnEditorActionListener( new EditActionListener() );
 
 		CredentailStorage.get( this, this );
+	}
+
+	@Override
+	protected int getLayoutId()
+	{
+		return R.layout.activity_login;
 	}
 
 	/**
@@ -124,7 +132,7 @@ public class LoginActivity extends Activity implements RetrievalCallback<Credent
 			showProgress( true );
 
 			final AuthRequest authRequest = new AuthRequest( email, password );
-			final Observable<AuthResponse> authObservable = LLApiProvider.get().auth( authRequest );
+			final Observable<AuthResponse> authObservable = m_llApi.auth( authRequest );
 
 			authObservable.subscribeOn( Schedulers.newThread() )
 			              .observeOn( AndroidSchedulers.mainThread() )

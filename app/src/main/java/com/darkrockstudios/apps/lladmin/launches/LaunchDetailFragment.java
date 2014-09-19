@@ -1,13 +1,12 @@
 package com.darkrockstudios.apps.lladmin.launches;
 
-import android.app.Fragment;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.TableLayout;
 import android.widget.Toast;
 
@@ -15,10 +14,11 @@ import com.android.datetimepicker.date.DatePickerDialog;
 import com.android.datetimepicker.time.RadialPickerLayout;
 import com.android.datetimepicker.time.TimePickerDialog;
 import com.darkrockstudios.apps.lladmin.R;
-import com.darkrockstudios.apps.lladmin.api.LLApiProvider;
+import com.darkrockstudios.apps.lladmin.api.LLApi;
 import com.darkrockstudios.apps.lladmin.api.data.LaunchGetRequest;
 import com.darkrockstudios.apps.lladmin.api.data.LaunchGetResponse;
 import com.darkrockstudios.apps.lladmin.api.data.launchlibrary.Launch;
+import com.darkrockstudios.apps.lladmin.base.InjectedFragment;
 import com.darkrockstudios.apps.lladmin.launches.viewholders.EditDateTimeViewHolder;
 import com.darkrockstudios.apps.lladmin.launches.viewholders.EditTextViewHolder;
 import com.darkrockstudios.apps.lladmin.launches.viewholders.FieldViewHolder;
@@ -31,13 +31,18 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import butterknife.ButterKnife;
+import javax.inject.Inject;
+
 import butterknife.InjectView;
 import rx.Observable;
 import rx.Observer;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
-public class LaunchDetailFragment extends Fragment
+public class LaunchDetailFragment extends InjectedFragment
 {
+	private static final String TAG = LaunchDetailFragment.class.getSimpleName();
+
 	public static final String ARG_ITEM_ID = "item_id";
 
 	private int      m_launchId;
@@ -46,6 +51,9 @@ public class LaunchDetailFragment extends Fragment
 	private Launch m_item;
 
 	private final List<FieldViewHolder> m_viewHolders;
+
+	@Inject
+	LLApi m_llApi;
 
 	@InjectView(R.id.LAUNCH_DETAIL_edit_container)
 	TableLayout m_launchDetailView;
@@ -70,15 +78,15 @@ public class LaunchDetailFragment extends Fragment
 	}
 
 	@Override
-	public View onCreateView( final LayoutInflater inflater, final ViewGroup container,
-	                          final Bundle savedInstanceState )
+	public void onViewCreated( final View view, final Bundle savedInstanceState )
 	{
-		final View rootView = inflater.inflate( R.layout.fragment_launch_detail, container, false );
-		ButterKnife.inject( this, rootView );
-
 		updateViews();
+	}
 
-		return rootView;
+	@Override
+	protected int getLayoutId()
+	{
+		return R.layout.fragment_launch_detail;
 	}
 
 	@Override
@@ -100,7 +108,7 @@ public class LaunchDetailFragment extends Fragment
 		switch( item.getItemId() )
 		{
 			case R.id.MENU_edit_save:
-				Toast.makeText( getActivity(), R.string.EDIT_saving_toast, Toast.LENGTH_SHORT );
+				Toast.makeText( getActivity(), R.string.EDIT_saving_toast, Toast.LENGTH_SHORT ).show();
 				handled = true;
 				break;
 			default:
@@ -117,15 +125,13 @@ public class LaunchDetailFragment extends Fragment
 		super.onResume();
 
 		final LaunchGetRequest request = new LaunchGetRequest( LaunchGetRequest.MODE_VERBOSE, m_launchId );
-		final Observable<LaunchGetResponse> observable = LLApiProvider.get().launchGet( request );
+		final Observable<LaunchGetResponse> observable = m_llApi.launchGet( request );
 
-		/*
-		Hack to get around the broken API
 		observable.subscribeOn( Schedulers.newThread() )
 		          .observeOn( AndroidSchedulers.mainThread() )
 		          .subscribe( new LaunchObserver() );
-		          */
 
+		/*
 		// Hacky hardcoded bull
 		m_item = new Launch();
 		m_item.id = 12;
@@ -136,6 +142,7 @@ public class LaunchDetailFragment extends Fragment
 		m_item.windowstart = DateTime.now();
 		m_item.windowend = DateTime.now();
 		//m_item.location
+		*/
 
 		updateViews();
 	}
@@ -237,6 +244,8 @@ public class LaunchDetailFragment extends Fragment
 		@Override
 		public void onError( final Throwable e )
 		{
+			Log.d( TAG, "ERROR: " + e.toString() );
+
 			updateViews();
 		}
 
