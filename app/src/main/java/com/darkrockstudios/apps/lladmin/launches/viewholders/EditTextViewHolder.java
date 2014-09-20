@@ -39,4 +39,20 @@ public class EditTextViewHolder extends FieldViewHolder
 			e.printStackTrace();
 		}
 	}
+
+	@Override
+	public void populate()
+	{
+		final String name = m_field.getName();
+
+		try
+		{
+			m_labelView.setText( name );
+			m_fieldView.setText( m_field.get( m_object ).toString() );
+		}
+		catch( IllegalAccessException e )
+		{
+			e.printStackTrace();
+		}
+	}
 }

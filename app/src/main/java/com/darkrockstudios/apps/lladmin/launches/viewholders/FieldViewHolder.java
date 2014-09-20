@@ -16,5 +16,7 @@ public abstract class FieldViewHolder
 		m_object = object;
 	}
 
+	public abstract void populate();
+
 	public abstract void save();
 }
